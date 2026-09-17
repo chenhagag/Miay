@@ -25,7 +25,7 @@ export default function PartnerTasksPage() {
   useEffect(() => {
     if (!partner) return
     setLoading(true)
-    get(`/tasks?assignee=${partner._id}`)
+    get(`/tasks?assignee=${partner.id}`)
       .then((data) => setTasks(Array.isArray(data) ? data : data.tasks || []))
       .catch((err) => console.error('Fetch error:', err))
       .finally(() => setLoading(false))
@@ -123,7 +123,7 @@ export default function PartnerTasksPage() {
             <h3 className="text-sm font-semibold text-gray-600 mb-3 pr-1">{category}</h3>
             <div className="space-y-2">
               {catTasks.map((task) => (
-                <TaskCard key={task._id} task={task} readOnly />
+                <TaskCard key={task.id} task={task} readOnly />
               ))}
             </div>
           </div>

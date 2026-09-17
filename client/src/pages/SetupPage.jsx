@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { Home, Users, Loader2 } from 'lucide-react'
+import { Users, Loader2 } from 'lucide-react'
 
 export default function SetupPage({ onSwitch }) {
   const { setup } = useAuth()
@@ -52,9 +52,7 @@ export default function SetupPage({ onSwitch }) {
       <div className="w-full max-w-xl">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg mb-4">
-            <Home size={32} className="text-white" />
-          </div>
+          <img src="/miayLogo.png" alt="Miay" className="w-20 h-20 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-gray-800">Miay</h1>
           <p className="text-gray-500 mt-1">סוכנת ניהול משימות בית במשותף</p>
         </div>

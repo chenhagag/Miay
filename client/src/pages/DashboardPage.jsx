@@ -27,7 +27,7 @@ export default function DashboardPage() {
     try {
       const today = new Date().toISOString().split('T')[0]
       const [tasksData, compData, unassignedData] = await Promise.all([
-        get(`/tasks?view=daily&date=${today}&assignee=${user._id}`),
+        get(`/tasks?view=daily&date=${today}&assignee=${user.id}`),
         get('/dashboard/comparison?period=daily').catch(() => null),
         get('/tasks?assignee=unassigned').catch(() => [])
       ])
@@ -47,7 +47,7 @@ export default function DashboardPage() {
 
   const handleComplete = async (task) => {
     try {
-      await put(`/tasks/${task._id}`, { completed: !task.completed })
+      await put(`/tasks/${task.id}`, { completed: !task.completed })
       fetchData()
     } catch (err) {
       console.error('Complete error:', err)
@@ -131,7 +131,7 @@ export default function DashboardPage() {
           <div className="space-y-3">
             {tasks.map((task) => (
               <TaskCard
-                key={task._id}
+                key={task.id}
                 task={task}
                 onComplete={handleComplete}
                 onEdit={(t) => { setEditTask(t); setShowModal(true) }}

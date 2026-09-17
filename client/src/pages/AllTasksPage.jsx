@@ -52,9 +52,9 @@ export default function AllTasksPage() {
 
     // Assignee filter
     if (assigneeFilter === 'me') {
-      result = result.filter((t) => t.assigneeId === user?._id || t.assignee?._id === user?._id)
+      result = result.filter((t) => t.assigneeId === user?.id || t.assignee?.id === user?.id)
     } else if (assigneeFilter === 'partner') {
-      result = result.filter((t) => t.assigneeId === partner?._id || t.assignee?._id === partner?._id)
+      result = result.filter((t) => t.assigneeId === partner?.id || t.assignee?.id === partner?.id)
     } else if (assigneeFilter === 'unassigned') {
       result = result.filter((t) => !t.assigneeId && !t.assignee)
     }
@@ -84,7 +84,7 @@ export default function AllTasksPage() {
 
   const handleComplete = async (task) => {
     try {
-      await put(`/tasks/${task._id}`, { completed: !task.completed })
+      await put(`/tasks/${task.id}`, { completed: !task.completed })
       fetchTasks()
     } catch (err) {
       console.error('Complete error:', err)
@@ -180,7 +180,7 @@ export default function AllTasksPage() {
             <div className="space-y-2">
               {catTasks.map((task) => (
                 <TaskCard
-                  key={task._id}
+                  key={task.id}
                   task={task}
                   onComplete={handleComplete}
                   onEdit={(t) => { setEditTask(t); setShowModal(true) }}

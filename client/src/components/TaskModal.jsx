@@ -26,14 +26,14 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const isEditing = !!task?._id
+  const isEditing = !!task?.id
 
   useEffect(() => {
     if (task) {
       setForm({
         title: task.title || '',
         description: task.description || '',
-        assigneeId: task.assigneeId || task.assignee?._id || '',
+        assigneeId: task.assigneeId || task.assignee?.id || '',
         type: task.type || 'RECURRING',
         recurrence: task.recurrence || 'DAILY',
         recurrenceDays: task.recurrenceDays || [],
@@ -86,7 +86,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
       if (!payload.assigneeId) {
         delete payload.assigneeId
       }
-      await onSave(payload, task?._id)
+      await onSave(payload, task?.id)
       onClose()
     } catch (err) {
       setError(err.message || 'שגיאה בשמירה')
@@ -99,7 +99,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
     if (!confirm('למחוק את המשימה?')) return
     setSaving(true)
     try {
-      await onDelete(task._id)
+      await onDelete(task.id)
       onClose()
     } catch (err) {
       setError(err.message || 'שגיאה במחיקה')
@@ -161,8 +161,8 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm bg-white"
             >
               <option value="">ללא שיוך</option>
-              {user && <option value={user._id}>{user.name} (אני)</option>}
-              {partner && <option value={partner._id}>{partner.name}</option>}
+              {user && <option value={user.id}>{user.name} (אני)</option>}
+              {partner && <option value={partner.id}>{partner.name}</option>}
             </select>
           </div>
 

@@ -205,7 +205,7 @@ export default function ComparisonPage() {
               ) : (
                 <div className="space-y-2">
                   {user1Tasks.map((task, i) => (
-                    <div key={task._id || i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div key={task.id || i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                       <span className="text-sm text-gray-700">{task.title}</span>
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, j) => (
@@ -240,7 +240,7 @@ export default function ComparisonPage() {
               ) : (
                 <div className="space-y-2">
                   {user2Tasks.map((task, i) => (
-                    <div key={task._id || i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div key={task.id || i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                       <span className="text-sm text-gray-700">{task.title}</span>
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, j) => (

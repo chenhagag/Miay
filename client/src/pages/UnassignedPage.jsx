@@ -77,7 +77,7 @@ export default function UnassignedPage() {
         <div className="space-y-3">
           {tasks.map((task) => (
             <div
-              key={task._id}
+              key={task.id}
               className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all"
             >
               <div className="flex items-start justify-between gap-4">
@@ -115,7 +115,7 @@ export default function UnassignedPage() {
               <div className="flex items-center gap-2 mt-4 flex-wrap">
                 <span className="text-xs text-gray-500 ml-1">שיוך מהיר:</span>
                 <button
-                  onClick={() => handleAssign(task._id, user._id)}
+                  onClick={() => handleAssign(task.id, user.id)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-medium transition-colors"
                 >
                   <UserPlus size={14} />
@@ -123,7 +123,7 @@ export default function UnassignedPage() {
                 </button>
                 {partner && (
                   <button
-                    onClick={() => handleAssign(task._id, partner._id)}
+                    onClick={() => handleAssign(task.id, partner.id)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded-lg text-xs font-medium transition-colors"
                   >
                     <UserPlus size={14} />
@@ -131,7 +131,7 @@ export default function UnassignedPage() {
                   </button>
                 )}
                 <button
-                  onClick={() => setScheduleTaskId(scheduleTaskId === task._id ? null : task._id)}
+                  onClick={() => setScheduleTaskId(scheduleTaskId === task.id ? null : task.id)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-medium transition-colors"
                 >
                   <CalendarDays size={14} />
@@ -140,7 +140,7 @@ export default function UnassignedPage() {
               </div>
 
               {/* Schedule form */}
-              {scheduleTaskId === task._id && (
+              {scheduleTaskId === task.id && (
                 <div className="mt-3 p-4 bg-gray-50 rounded-xl space-y-3">
                   <div className="flex gap-2">
                     {['ONE_TIME', 'RECURRING'].map((t) => (
@@ -181,7 +181,7 @@ export default function UnassignedPage() {
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleScheduleSave(task._id)}
+                      onClick={() => handleScheduleSave(task.id)}
                       className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-xs font-medium transition-colors"
                     >
                       שמירה

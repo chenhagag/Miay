@@ -28,7 +28,7 @@ export default function MyTasksPage() {
   const fetchTasks = async () => {
     setLoading(true)
     try {
-      const data = await get(`/tasks?assignee=${user._id}`)
+      const data = await get(`/tasks?assignee=${user.id}`)
       setTasks(Array.isArray(data) ? data : data.tasks || [])
     } catch (err) {
       console.error('Fetch error:', err)
@@ -68,7 +68,7 @@ export default function MyTasksPage() {
 
   const handleComplete = async (task) => {
     try {
-      await put(`/tasks/${task._id}`, { completed: !task.completed })
+      await put(`/tasks/${task.id}`, { completed: !task.completed })
       fetchTasks()
     } catch (err) {
       console.error('Complete error:', err)
@@ -150,7 +150,7 @@ export default function MyTasksPage() {
             <div className="space-y-2">
               {catTasks.map((task) => (
                 <TaskCard
-                  key={task._id}
+                  key={task.id}
                   task={task}
                   onComplete={handleComplete}
                   onEdit={(t) => { setEditTask(t); setShowModal(true) }}

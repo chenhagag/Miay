@@ -59,8 +59,12 @@ export default function Sidebar({ mobile = false }) {
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white/80 backdrop-blur-sm border-l border-gray-200 h-screen sticky top-0 shadow-sm">
-      {/* User info */}
+      {/* Logo + User info */}
       <div className="p-5 border-b border-gray-100">
+        <div className="flex items-center gap-2 mb-4">
+          <img src="/miayLogo.png" alt="Miay" className="w-10 h-10" />
+          <span className="text-xl font-bold text-gray-800">Miay</span>
+        </div>
         <div className="flex items-center gap-3">
           <div
             className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md"
