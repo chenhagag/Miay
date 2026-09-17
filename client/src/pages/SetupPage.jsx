@@ -34,7 +34,7 @@ export default function SetupPage({ onSwitch }) {
     try {
       await setup({
         householdName: form.householdName,
-        childrenCount: Number(form.childrenCount),
+        numChildren: Number(form.childrenCount),
         user1: { name: form.user1Name, email: form.user1Email, password: form.user1Password },
         user2: { name: form.user2Name, email: form.user2Email, password: form.user2Password }
       })
@@ -56,7 +56,7 @@ export default function SetupPage({ onSwitch }) {
             <Home size={32} className="text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-800">Miay</h1>
-          <p className="text-gray-500 mt-1">ניהול משימות הבית בצורה הוגנת</p>
+          <p className="text-gray-500 mt-1">סוכנת ניהול משימות בית במשותף</p>
         </div>
 
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/50">

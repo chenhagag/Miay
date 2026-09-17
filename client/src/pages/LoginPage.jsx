@@ -35,7 +35,7 @@ export default function LoginPage({ onSwitch }) {
             <Home size={32} className="text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-800">Miay</h1>
-          <p className="text-gray-500 mt-1">ניהול משימות הבית בצורה הוגנת</p>
+          <p className="text-gray-500 mt-1">סוכנת ניהול משימות בית במשותף</p>
         </div>
 
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/50">
