@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   ClipboardList,
@@ -21,6 +21,7 @@ const navItems = [
 
 export default function Sidebar({ mobile = false }) {
   const { user, partner, logout } = useAuth()
+  const navigate = useNavigate()
 
   const getLabel = (item) => {
     if (item.dynamic && partner) return `המשימות של ${partner.name}`
@@ -65,12 +66,13 @@ export default function Sidebar({ mobile = false }) {
           <img src="/miayLogo.png" alt="Miay" className="w-10 h-10" />
           <span className="text-xl font-bold text-gray-800">Miay</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div
-            className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md"
-            style={{ backgroundColor: user?.avatarColor || '#6366f1' }}
-          >
-            {user?.name?.charAt(0) || '?'}
+        <div
+          className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-xl p-2 -m-2 transition-colors"
+          onClick={() => navigate('/profile')}
+          title="עריכת פרופיל"
+        >
+          <div className="w-11 h-11 rounded-full flex items-center justify-center text-2xl shadow-md bg-gray-100">
+            {user?.avatar || '😊'}
           </div>
           <div>
             <p className="font-semibold text-gray-800">{user?.name || 'משתמש'}</p>

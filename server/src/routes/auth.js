@@ -55,6 +55,7 @@ router.post("/setup", async (req, res) => {
           email: user1.email,
           passwordHash: hash1,
           avatarColor: "#6366f1",
+          avatar: user1.avatar || "🐯",
         },
       });
 
@@ -65,6 +66,7 @@ router.post("/setup", async (req, res) => {
           email: user2.email,
           passwordHash: hash2,
           avatarColor: "#ec4899",
+          avatar: user2.avatar || "🐥",
         },
       });
 
@@ -84,6 +86,7 @@ router.post("/setup", async (req, res) => {
         email: result.user1.email,
         householdId: result.user1.householdId,
         avatarColor: result.user1.avatarColor,
+        avatar: result.user1.avatar,
       },
     });
   } catch (err) {
@@ -117,6 +120,7 @@ router.post("/login", async (req, res) => {
         email: user.email,
         householdId: user.householdId,
         avatarColor: user.avatarColor,
+        avatar: user.avatar,
       },
     });
   } catch (err) {
@@ -151,6 +155,7 @@ router.get("/me", auth, async (req, res) => {
         email: user.email,
         householdId: user.householdId,
         avatarColor: user.avatarColor,
+        avatar: user.avatar,
         household: {
           id: user.household.id,
           name: user.household.name,
@@ -163,12 +168,40 @@ router.get("/me", auth, async (req, res) => {
             name: partner.name,
             email: partner.email,
             avatarColor: partner.avatarColor,
+            avatar: partner.avatar,
           }
         : null,
     });
   } catch (err) {
     console.error("Me error:", err);
     res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+// PUT /api/auth/profile - Update current user's name and avatar
+router.put("/profile", auth, async (req, res) => {
+  try {
+    const { name, avatar } = req.body;
+    const data = {};
+    if (name !== undefined) data.name = name;
+    if (avatar !== undefined) data.avatar = avatar;
+
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data,
+    });
+
+    res.json({
+      id: updated.id,
+      name: updated.name,
+      email: updated.email,
+      householdId: updated.householdId,
+      avatarColor: updated.avatarColor,
+      avatar: updated.avatar,
+    });
+  } catch (err) {
+    console.error("Profile update error:", err);
+    res.status(500).json({ error: "Failed to update profile" });
   }
 });
 

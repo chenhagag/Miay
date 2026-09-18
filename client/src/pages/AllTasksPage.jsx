@@ -19,7 +19,19 @@ const typeFilters = [
   { key: 'UNSCHEDULED', label: 'לא מתוזמנות' }
 ]
 
-const categories = ['הכל', 'ניקיון', 'בישול', 'כביסה', 'קניות', 'ילדים', 'תחזוקה', 'אחר']
+const categories = [
+  { value: 'all', label: 'הכל' },
+  { value: 'dishes', label: 'כלים' },
+  { value: 'laundry', label: 'כביסה' },
+  { value: 'cleaning', label: 'ניקיון' },
+  { value: 'cooking', label: 'בישול' },
+  { value: 'kids', label: 'ילדים' },
+  { value: 'errands', label: 'סידורים' },
+  { value: 'garden', label: 'גינה' },
+  { value: 'general', label: 'כללי' }
+]
+
+const categoryLabelMap = Object.fromEntries(categories.map((c) => [c.value, c.label]))
 
 export default function AllTasksPage() {
   const { user, partner } = useAuth()
@@ -27,7 +39,7 @@ export default function AllTasksPage() {
   const [loading, setLoading] = useState(true)
   const [assigneeFilter, setAssigneeFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
-  const [categoryFilter, setCategoryFilter] = useState('הכל')
+  const [categoryFilter, setCategoryFilter] = useState('all')
   const [editTask, setEditTask] = useState(null)
   const [showModal, setShowModal] = useState(false)
 
@@ -65,7 +77,7 @@ export default function AllTasksPage() {
     }
 
     // Category filter
-    if (categoryFilter !== 'הכל') {
+    if (categoryFilter !== 'all') {
       result = result.filter((t) => t.category === categoryFilter)
     }
 
@@ -75,7 +87,7 @@ export default function AllTasksPage() {
   const groupedTasks = useMemo(() => {
     const groups = {}
     filteredTasks.forEach((task) => {
-      const cat = task.category || 'אחר'
+      const cat = categoryLabelMap[task.category] || categoryLabelMap['general']
       if (!groups[cat]) groups[cat] = []
       groups[cat].push(task)
     })
@@ -158,7 +170,7 @@ export default function AllTasksPage() {
           className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm bg-white focus:border-indigo-400 outline-none"
         >
           {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c.value} value={c.value}>{c.label}</option>
           ))}
         </select>
         <span className="text-sm text-gray-400">{filteredTasks.length} משימות</span>

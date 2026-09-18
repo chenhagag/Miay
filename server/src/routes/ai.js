@@ -7,11 +7,17 @@ const prisma = new PrismaClient();
 
 router.use(auth);
 
+const assigneeSelect = { select: { id: true, name: true, avatarColor: true, avatar: true } };
+
 function buildSystemPrompt(tasks, users) {
   const taskList = tasks
     .map((t) => {
       const assignee = t.assignee ? t.assignee.name : "לא משויך";
-      return `- "${t.title}" (${t.category}, משויך ל: ${assignee}, סוג: ${t.type}, id: ${t.id})`;
+      const secondAssignee = t.secondAssignee ? t.secondAssignee.name : "אין";
+      const splitInfo = t.secondAssigneeId
+        ? `, שותף/ה שני/ה: ${secondAssignee}, ימים ראשיים: [${t.assigneeDays.join(",")}], ימים שניים: [${t.secondAssigneeDays.join(",")}]`
+        : "";
+      return `- "${t.title}" (${t.category}, משויך ל: ${assignee}${splitInfo}, סוג: ${t.type}, id: ${t.id})`;
     })
     .join("\n");
 
@@ -32,7 +38,10 @@ ${taskList || "אין משימות קיימות"}
   "task": {
     "title": "שם המשימה",
     "description": "תיאור (אופציונלי)",
-    "assigneeId": "id של המשתמש או null",
+    "assigneeId": "id של המשתמש הראשי או null",
+    "secondAssigneeId": "id של השותף/ה השני/ה או null (לחלוקה בין שתיים)",
+    "assigneeDays": [0-6] (ימים שהמשתמש הראשי אחראי, 0=ראשון),
+    "secondAssigneeDays": [0-6] (ימים שהשותף/ה השני/ה אחראי/ת),
     "type": "RECURRING" | "ONE_TIME" | "UNSCHEDULED",
     "recurrence": "DAILY" | "WEEKLY" | "MONTHLY" | null,
     "recurrenceDays": [0-6] (0=ראשון),
@@ -53,7 +62,8 @@ ${taskList || "אין משימות קיימות"}
 - אם ההודעה היא שאלה כללית, השתמש ב-action: "info"
 - אם מוזכר שם של משתמש, התאם אותו ל-id הנכון
 - אם המשימה כבר קיימת ברשימה, אל תיצור כפילות - עדכן במקום
-- קטגוריה: נסה לזהות אוטומטית לפי תוכן המשימה`;
+- קטגוריה: נסה לזהות אוטומטית לפי תוכן המשימה
+- אם ההודעה מבקשת לחלק משימה בין שתי השותפות, השתמש ב-secondAssigneeId, assigneeDays ו-secondAssigneeDays`;
 }
 
 async function callAI(systemPrompt, userMessage) {
@@ -106,7 +116,10 @@ router.post("/parse-task", async (req, res) => {
     const [tasks, users] = await Promise.all([
       prisma.task.findMany({
         where: { householdId },
-        include: { assignee: { select: { id: true, name: true } } },
+        include: {
+          assignee: { select: { id: true, name: true } },
+          secondAssignee: { select: { id: true, name: true } },
+        },
       }),
       prisma.user.findMany({
         where: { householdId },
@@ -141,6 +154,9 @@ router.post("/parse-task", async (req, res) => {
           title: parsed.task.title,
           description: parsed.task.description || null,
           assigneeId: parsed.task.assigneeId || null,
+          secondAssigneeId: parsed.task.secondAssigneeId || null,
+          assigneeDays: parsed.task.assigneeDays || [],
+          secondAssigneeDays: parsed.task.secondAssigneeDays || [],
           createdById: req.user.id,
           type: parsed.task.type || "UNSCHEDULED",
           recurrence: parsed.task.recurrence || null,
@@ -155,7 +171,8 @@ router.post("/parse-task", async (req, res) => {
           category: parsed.task.category || "general",
         },
         include: {
-          assignee: { select: { id: true, name: true, avatarColor: true } },
+          assignee: assigneeSelect,
+          secondAssignee: assigneeSelect,
           createdBy: { select: { id: true, name: true } },
         },
       });
@@ -169,6 +186,9 @@ router.post("/parse-task", async (req, res) => {
         if (t.title !== undefined) updateData.title = t.title;
         if (t.description !== undefined) updateData.description = t.description;
         if (t.assigneeId !== undefined) updateData.assigneeId = t.assigneeId || null;
+        if (t.secondAssigneeId !== undefined) updateData.secondAssigneeId = t.secondAssigneeId || null;
+        if (t.assigneeDays !== undefined) updateData.assigneeDays = t.assigneeDays;
+        if (t.secondAssigneeDays !== undefined) updateData.secondAssigneeDays = t.secondAssigneeDays;
         if (t.type !== undefined) updateData.type = t.type;
         if (t.recurrence !== undefined) updateData.recurrence = t.recurrence || null;
         if (t.recurrenceDays !== undefined) updateData.recurrenceDays = t.recurrenceDays;
@@ -184,7 +204,8 @@ router.post("/parse-task", async (req, res) => {
           where: { id: parsed.taskId },
           data: updateData,
           include: {
-            assignee: { select: { id: true, name: true, avatarColor: true } },
+            assignee: assigneeSelect,
+            secondAssignee: assigneeSelect,
             createdBy: { select: { id: true, name: true } },
           },
         });
@@ -197,7 +218,8 @@ router.post("/parse-task", async (req, res) => {
         resultTask = await prisma.task.delete({
           where: { id: parsed.taskId },
           include: {
-            assignee: { select: { id: true, name: true, avatarColor: true } },
+            assignee: assigneeSelect,
+            secondAssignee: assigneeSelect,
             createdBy: { select: { id: true, name: true } },
           },
         });

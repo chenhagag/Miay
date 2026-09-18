@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { Users, Loader2 } from 'lucide-react'
+import AvatarPicker from '../components/AvatarPicker'
 
 export default function SetupPage({ onSwitch }) {
   const { setup } = useAuth()
@@ -10,9 +11,11 @@ export default function SetupPage({ onSwitch }) {
     user1Name: '',
     user1Email: '',
     user1Password: '',
+    user1Avatar: '🐯',
     user2Name: '',
     user2Email: '',
-    user2Password: ''
+    user2Password: '',
+    user2Avatar: '🐥'
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -35,8 +38,8 @@ export default function SetupPage({ onSwitch }) {
       await setup({
         householdName: form.householdName,
         numChildren: Number(form.childrenCount),
-        user1: { name: form.user1Name, email: form.user1Email, password: form.user1Password },
-        user2: { name: form.user2Name, email: form.user2Email, password: form.user2Password }
+        user1: { name: form.user1Name, email: form.user1Email, password: form.user1Password, avatar: form.user1Avatar },
+        user2: { name: form.user2Name, email: form.user2Email, password: form.user2Password, avatar: form.user2Avatar }
       })
     } catch (err) {
       setError(err.message || 'שגיאה בהגדרת המשק')
@@ -133,6 +136,13 @@ export default function SetupPage({ onSwitch }) {
                   placeholder="לפחות 6 תווים"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">אווטאר</label>
+                <AvatarPicker
+                  value={form.user1Avatar}
+                  onChange={(emoji) => handleChange('user1Avatar', emoji)}
+                />
+              </div>
             </div>
 
             {/* User 2 */}
@@ -170,6 +180,13 @@ export default function SetupPage({ onSwitch }) {
                   onChange={(e) => handleChange('user2Password', e.target.value)}
                   className={inputClass}
                   placeholder="לפחות 6 תווים"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">אווטאר</label>
+                <AvatarPicker
+                  value={form.user2Avatar}
+                  onChange={(emoji) => handleChange('user2Avatar', emoji)}
                 />
               </div>
             </div>

@@ -1,13 +1,14 @@
 import { CheckCircle2, Circle, Clock, CalendarDays, Pencil } from 'lucide-react'
 
-const categoryColors = {
-  'ניקיון': 'bg-blue-100 text-blue-700',
-  'בישול': 'bg-orange-100 text-orange-700',
-  'כביסה': 'bg-purple-100 text-purple-700',
-  'קניות': 'bg-green-100 text-green-700',
-  'ילדים': 'bg-pink-100 text-pink-700',
-  'תחזוקה': 'bg-yellow-100 text-yellow-700',
-  'אחר': 'bg-gray-100 text-gray-700'
+const categoryMap = {
+  dishes: { label: 'כלים', colors: 'bg-cyan-100 text-cyan-700' },
+  laundry: { label: 'כביסה', colors: 'bg-purple-100 text-purple-700' },
+  cleaning: { label: 'ניקיון', colors: 'bg-blue-100 text-blue-700' },
+  cooking: { label: 'בישול', colors: 'bg-orange-100 text-orange-700' },
+  kids: { label: 'ילדים', colors: 'bg-pink-100 text-pink-700' },
+  errands: { label: 'סידורים', colors: 'bg-green-100 text-green-700' },
+  garden: { label: 'גינה', colors: 'bg-lime-100 text-lime-700' },
+  general: { label: 'כללי', colors: 'bg-gray-100 text-gray-700' }
 }
 
 const typeLabels = {
@@ -24,7 +25,8 @@ const recurrenceLabels = {
 
 export default function TaskCard({ task, onComplete, onEdit, readOnly = false }) {
   const isOneTimeWithDate = task.type === 'ONE_TIME' && task.scheduledDate
-  const colorClass = categoryColors[task.category] || categoryColors['אחר']
+  const catInfo = categoryMap[task.category] || categoryMap['general']
+  const colorClass = catInfo.colors
 
   const handleComplete = (e) => {
     e.stopPropagation()
@@ -76,7 +78,7 @@ export default function TaskCard({ task, onComplete, onEdit, readOnly = false })
           <div className="flex items-center gap-2 flex-wrap mt-2">
             {/* Category badge */}
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorClass}`}>
-              {task.category || 'אחר'}
+              {catInfo.label}
             </span>
 
             {/* Type badge */}
@@ -123,16 +125,25 @@ export default function TaskCard({ task, onComplete, onEdit, readOnly = false })
           ))}
         </div>
 
-        {/* Assignee avatar */}
-        {task.assignee && (
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-            style={{ backgroundColor: task.assignee.avatarColor || '#6366f1' }}
-            title={task.assignee.name}
-          >
-            {task.assignee.name?.charAt(0) || '?'}
-          </div>
-        )}
+        {/* Assignee avatars */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {task.assignee && (
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm bg-gray-100"
+              title={task.assignee.name}
+            >
+              {task.assignee.avatar || task.assignee.name?.charAt(0) || '?'}
+            </div>
+          )}
+          {task.secondAssignee && (
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm bg-gray-100 -mr-2"
+              title={task.secondAssignee.name}
+            >
+              {task.secondAssignee.avatar || task.secondAssignee.name?.charAt(0) || '?'}
+            </div>
+          )}
+        </div>
 
         {/* Edit icon */}
         {!readOnly && (

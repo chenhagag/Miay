@@ -8,6 +8,8 @@ const prisma = new PrismaClient();
 // All routes require auth
 router.use(auth);
 
+const assigneeSelect = { select: { id: true, name: true, avatarColor: true, avatar: true } };
+
 // GET /api/tasks
 router.get("/", async (req, res) => {
   try {
@@ -26,12 +28,16 @@ router.get("/", async (req, res) => {
       where.type = type;
     }
 
-    // Assignee filter
+    // Assignee filter - include tasks where either assigneeId or secondAssigneeId matches
     if (assignee && assignee !== "all") {
       if (assignee === "unassigned") {
         where.assigneeId = null;
       } else {
-        where.assigneeId = assignee;
+        where.OR = [
+          ...(where.OR || []),
+          { assigneeId: assignee },
+          { secondAssigneeId: assignee },
+        ];
       }
     }
 
@@ -39,7 +45,6 @@ router.get("/", async (req, res) => {
     if (view === "daily" && date) {
       const targetDate = new Date(date);
       const dayOfWeek = targetDate.getDay(); // 0=Sunday
-      const dayOfMonth = targetDate.getDate();
 
       // Build OR conditions for different task types that apply to this day
       const dateStart = new Date(date);
@@ -47,7 +52,7 @@ router.get("/", async (req, res) => {
       const dateEnd = new Date(date);
       dateEnd.setHours(23, 59, 59, 999);
 
-      const orConditions = [
+      const dateOrConditions = [
         // Recurring daily tasks
         { type: "RECURRING", recurrence: "DAILY" },
         // Recurring weekly tasks where the day matches
@@ -63,7 +68,17 @@ router.get("/", async (req, res) => {
         { type: "UNSCHEDULED" },
       ];
 
-      where.OR = orConditions;
+      // If we already have OR conditions from assignee filter, combine with AND
+      if (where.OR) {
+        const assigneeOr = where.OR;
+        delete where.OR;
+        where.AND = [
+          { OR: assigneeOr },
+          { OR: dateOrConditions },
+        ];
+      } else {
+        where.OR = dateOrConditions;
+      }
     } else if (view === "weekly" && date) {
       const targetDate = new Date(date);
       const dayOfWeek = targetDate.getDay();
@@ -75,7 +90,7 @@ router.get("/", async (req, res) => {
       weekEnd.setDate(weekStart.getDate() + 6);
       weekEnd.setHours(23, 59, 59, 999);
 
-      where.OR = [
+      const dateOrConditions = [
         { type: "RECURRING" },
         {
           type: "ONE_TIME",
@@ -83,12 +98,23 @@ router.get("/", async (req, res) => {
         },
         { type: "UNSCHEDULED" },
       ];
+
+      if (where.OR) {
+        const assigneeOr = where.OR;
+        delete where.OR;
+        where.AND = [
+          { OR: assigneeOr },
+          { OR: dateOrConditions },
+        ];
+      } else {
+        where.OR = dateOrConditions;
+      }
     } else if (view === "monthly" && date) {
       const targetDate = new Date(date);
       const monthStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
       const monthEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
 
-      where.OR = [
+      const dateOrConditions = [
         { type: "RECURRING" },
         {
           type: "ONE_TIME",
@@ -96,12 +122,24 @@ router.get("/", async (req, res) => {
         },
         { type: "UNSCHEDULED" },
       ];
+
+      if (where.OR) {
+        const assigneeOr = where.OR;
+        delete where.OR;
+        where.AND = [
+          { OR: assigneeOr },
+          { OR: dateOrConditions },
+        ];
+      } else {
+        where.OR = dateOrConditions;
+      }
     }
 
     const tasks = await prisma.task.findMany({
       where,
       include: {
-        assignee: { select: { id: true, name: true, avatarColor: true } },
+        assignee: assigneeSelect,
+        secondAssignee: assigneeSelect,
         createdBy: { select: { id: true, name: true } },
         completions: true,
       },
@@ -122,6 +160,9 @@ router.post("/", async (req, res) => {
       title,
       description,
       assigneeId,
+      secondAssigneeId,
+      assigneeDays,
+      secondAssigneeDays,
       type,
       recurrence,
       recurrenceDays,
@@ -139,6 +180,9 @@ router.post("/", async (req, res) => {
         title,
         description: description || null,
         assigneeId: assigneeId || null,
+        secondAssigneeId: secondAssigneeId || null,
+        assigneeDays: assigneeDays || [],
+        secondAssigneeDays: secondAssigneeDays || [],
         createdById: req.user.id,
         type: type || "UNSCHEDULED",
         recurrence: recurrence || null,
@@ -151,7 +195,8 @@ router.post("/", async (req, res) => {
         category: category || "general",
       },
       include: {
-        assignee: { select: { id: true, name: true, avatarColor: true } },
+        assignee: assigneeSelect,
+        secondAssignee: assigneeSelect,
         createdBy: { select: { id: true, name: true } },
       },
     });
@@ -180,6 +225,9 @@ router.put("/:id", async (req, res) => {
       title,
       description,
       assigneeId,
+      secondAssigneeId,
+      assigneeDays,
+      secondAssigneeDays,
       type,
       recurrence,
       recurrenceDays,
@@ -196,6 +244,9 @@ router.put("/:id", async (req, res) => {
     if (title !== undefined) data.title = title;
     if (description !== undefined) data.description = description;
     if (assigneeId !== undefined) data.assigneeId = assigneeId || null;
+    if (secondAssigneeId !== undefined) data.secondAssigneeId = secondAssigneeId || null;
+    if (assigneeDays !== undefined) data.assigneeDays = assigneeDays;
+    if (secondAssigneeDays !== undefined) data.secondAssigneeDays = secondAssigneeDays;
     if (type !== undefined) data.type = type;
     if (recurrence !== undefined) data.recurrence = recurrence || null;
     if (recurrenceDays !== undefined) data.recurrenceDays = recurrenceDays;
@@ -214,7 +265,8 @@ router.put("/:id", async (req, res) => {
       where: { id },
       data,
       include: {
-        assignee: { select: { id: true, name: true, avatarColor: true } },
+        assignee: assigneeSelect,
+        secondAssignee: assigneeSelect,
         createdBy: { select: { id: true, name: true } },
         completions: true,
       },
@@ -291,7 +343,8 @@ router.post("/:id/complete", async (req, res) => {
     const updated = await prisma.task.findUnique({
       where: { id },
       include: {
-        assignee: { select: { id: true, name: true, avatarColor: true } },
+        assignee: assigneeSelect,
+        secondAssignee: assigneeSelect,
         createdBy: { select: { id: true, name: true } },
         completions: true,
       },
@@ -338,7 +391,8 @@ router.post("/:id/uncomplete", async (req, res) => {
     const updated = await prisma.task.findUnique({
       where: { id },
       include: {
-        assignee: { select: { id: true, name: true, avatarColor: true } },
+        assignee: assigneeSelect,
+        secondAssignee: assigneeSelect,
         createdBy: { select: { id: true, name: true } },
         completions: true,
       },

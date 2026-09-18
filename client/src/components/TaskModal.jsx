@@ -2,13 +2,27 @@ import { useState, useEffect } from 'react'
 import { X, Trash2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
-const categories = ['ניקיון', 'בישול', 'כביסה', 'קניות', 'ילדים', 'תחזוקה', 'אחר']
+const categories = [
+  { value: 'dishes', label: 'כלים' },
+  { value: 'laundry', label: 'כביסה' },
+  { value: 'cleaning', label: 'ניקיון' },
+  { value: 'cooking', label: 'בישול' },
+  { value: 'kids', label: 'ילדים' },
+  { value: 'errands', label: 'סידורים' },
+  { value: 'garden', label: 'גינה' },
+  { value: 'general', label: 'כללי' }
+]
+
 const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
 
 const emptyTask = {
   title: '',
   description: '',
   assigneeId: '',
+  secondAssigneeId: '',
+  splitAssignment: false,
+  assigneeDays: [],
+  secondAssigneeDays: [],
   type: 'RECURRING',
   recurrence: 'DAILY',
   recurrenceDays: [],
@@ -17,7 +31,7 @@ const emptyTask = {
   startTime: '',
   endTime: '',
   weight: 3,
-  category: 'אחר'
+  category: 'general'
 }
 
 export default function TaskModal({ task, onSave, onDelete, onClose }) {
@@ -30,10 +44,15 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
 
   useEffect(() => {
     if (task) {
+      const hasSplit = !!task.secondAssigneeId || (task.secondAssignee?.id)
       setForm({
         title: task.title || '',
         description: task.description || '',
         assigneeId: task.assigneeId || task.assignee?.id || '',
+        secondAssigneeId: task.secondAssigneeId || task.secondAssignee?.id || '',
+        splitAssignment: hasSplit,
+        assigneeDays: task.assigneeDays || [],
+        secondAssigneeDays: task.secondAssigneeDays || [],
         type: task.type || 'RECURRING',
         recurrence: task.recurrence || 'DAILY',
         recurrenceDays: task.recurrenceDays || [],
@@ -42,7 +61,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
         startTime: task.startTime || '',
         endTime: task.endTime || '',
         weight: task.weight || 3,
-        category: task.category || 'אחר'
+        category: task.category || 'general'
       })
     } else {
       setForm(emptyTask)
@@ -62,6 +81,40 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
     })
   }
 
+  const toggleAssigneeDay = (dayIndex) => {
+    setForm((prev) => {
+      const days = prev.assigneeDays.includes(dayIndex)
+        ? prev.assigneeDays.filter((d) => d !== dayIndex)
+        : [...prev.assigneeDays, dayIndex]
+      return { ...prev, assigneeDays: days }
+    })
+  }
+
+  const toggleSecondAssigneeDay = (dayIndex) => {
+    setForm((prev) => {
+      const days = prev.secondAssigneeDays.includes(dayIndex)
+        ? prev.secondAssigneeDays.filter((d) => d !== dayIndex)
+        : [...prev.secondAssigneeDays, dayIndex]
+      return { ...prev, secondAssigneeDays: days }
+    })
+  }
+
+  const handleSplitToggle = (enabled) => {
+    setForm((prev) => {
+      const updated = { ...prev, splitAssignment: enabled }
+      if (enabled) {
+        // Set defaults: assigneeId = user, secondAssigneeId = partner
+        if (!updated.assigneeId && user) updated.assigneeId = user.id
+        if (!updated.secondAssigneeId && partner) updated.secondAssigneeId = partner.id
+      } else {
+        updated.secondAssigneeId = ''
+        updated.assigneeDays = []
+        updated.secondAssigneeDays = []
+      }
+      return updated
+    })
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.title.trim()) {
@@ -71,20 +124,40 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
     setError('')
     setSaving(true)
     try {
-      const payload = { ...form }
-      if (payload.type !== 'RECURRING') {
-        delete payload.recurrence
-        delete payload.recurrenceDays
+      const payload = {
+        title: form.title,
+        description: form.description,
+        assigneeId: form.assigneeId,
+        type: form.type,
+        weight: form.weight,
+        category: form.category,
+        timeSpecific: form.timeSpecific,
       }
-      if (payload.type !== 'ONE_TIME') {
-        delete payload.scheduledDate
+
+      // Split assignment fields
+      if (form.splitAssignment) {
+        payload.secondAssigneeId = form.secondAssigneeId || null
+        payload.assigneeDays = form.assigneeDays
+        payload.secondAssigneeDays = form.secondAssigneeDays
+      } else {
+        payload.secondAssigneeId = null
+        payload.assigneeDays = []
+        payload.secondAssigneeDays = []
       }
-      if (!payload.timeSpecific) {
-        delete payload.startTime
-        delete payload.endTime
+
+      if (payload.type === 'RECURRING') {
+        payload.recurrence = form.recurrence
+        payload.recurrenceDays = form.recurrenceDays
+      }
+      if (payload.type === 'ONE_TIME') {
+        payload.scheduledDate = form.scheduledDate
+      }
+      if (form.timeSpecific) {
+        payload.startTime = form.startTime
+        payload.endTime = form.endTime
       }
       if (!payload.assigneeId) {
-        delete payload.assigneeId
+        payload.assigneeId = null
       }
       await onSave(payload, task?.id)
       onClose()
@@ -106,6 +179,12 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
     } finally {
       setSaving(false)
     }
+  }
+
+  const getAssigneeName = (id) => {
+    if (id === user?.id) return user.name
+    if (id === partner?.id) return partner.name
+    return ''
   }
 
   return (
@@ -155,15 +234,85 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
           {/* Assignee */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">שיוך</label>
-            <select
-              value={form.assigneeId}
-              onChange={(e) => handleChange('assigneeId', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm bg-white"
-            >
-              <option value="">ללא שיוך</option>
-              {user && <option value={user.id}>{user.name} (אני)</option>}
-              {partner && <option value={partner.id}>{partner.name}</option>}
-            </select>
+            {!form.splitAssignment && (
+              <select
+                value={form.assigneeId}
+                onChange={(e) => handleChange('assigneeId', e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm bg-white"
+              >
+                <option value="">ללא שיוך</option>
+                {user && <option value={user.id}>{user.name} (אני)</option>}
+                {partner && <option value={partner.id}>{partner.name}</option>}
+              </select>
+            )}
+
+            {/* Split assignment toggle */}
+            {partner && (
+              <label className="flex items-center gap-2 cursor-pointer mt-2">
+                <input
+                  type="checkbox"
+                  checked={form.splitAssignment}
+                  onChange={(e) => handleSplitToggle(e.target.checked)}
+                  className="w-4 h-4 rounded text-indigo-500 focus:ring-indigo-400"
+                />
+                <span className="text-sm font-medium text-gray-700">חלוקה בין שתיים</span>
+              </label>
+            )}
+
+            {/* Split assignment day pickers */}
+            {form.splitAssignment && partner && (
+              <div className="mt-3 space-y-4 bg-gray-50 rounded-xl p-4">
+                {/* First assignee */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      {user?.avatar || '😊'} {getAssigneeName(form.assigneeId) || user?.name}
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {dayNames.map((name, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => toggleAssigneeDay(i)}
+                        className={`w-10 h-10 rounded-full text-xs font-medium transition-all ${
+                          form.assigneeDays.includes(i)
+                            ? 'bg-indigo-500 text-white shadow-sm'
+                            : 'bg-white text-gray-500 hover:bg-gray-200 border border-gray-200'
+                        }`}
+                      >
+                        {name.charAt(0)}'{name.charAt(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Second assignee */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      {partner?.avatar || '😊'} {partner?.name}
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {dayNames.map((name, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => toggleSecondAssigneeDay(i)}
+                        className={`w-10 h-10 rounded-full text-xs font-medium transition-all ${
+                          form.secondAssigneeDays.includes(i)
+                            ? 'bg-pink-500 text-white shadow-sm'
+                            : 'bg-white text-gray-500 hover:bg-gray-200 border border-gray-200'
+                        }`}
+                      >
+                        {name.charAt(0)}'{name.charAt(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Category */}
@@ -175,7 +324,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }) {
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm bg-white"
             >
               {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>

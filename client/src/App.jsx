@@ -9,6 +9,7 @@ import PartnerTasksPage from './pages/PartnerTasksPage'
 import AllTasksPage from './pages/AllTasksPage'
 import UnassignedPage from './pages/UnassignedPage'
 import ComparisonPage from './pages/ComparisonPage'
+import ProfilePage from './pages/ProfilePage'
 import SetupPage from './pages/SetupPage'
 import LoginPage from './pages/LoginPage'
 import { Loader2 } from 'lucide-react'
@@ -49,6 +50,7 @@ function AppContent() {
           <Route path="/all-tasks" element={<AllTasksPage />} />
           <Route path="/unassigned" element={<UnassignedPage />} />
           <Route path="/comparison" element={<ComparisonPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </main>
 

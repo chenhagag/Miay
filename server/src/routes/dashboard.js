@@ -17,7 +17,7 @@ router.get("/comparison", async (req, res) => {
     // Get all users in household
     const users = await prisma.user.findMany({
       where: { householdId },
-      select: { id: true, name: true, avatarColor: true },
+      select: { id: true, name: true, avatarColor: true, avatar: true },
     });
 
     // Get all tasks in household
@@ -48,12 +48,36 @@ router.get("/comparison", async (req, res) => {
       return false;
     }
 
+    // Check if a task is assigned to a user on a given day (considering split assignment)
+    function taskAssignedToUserOnDay(task, userId, day) {
+      const dow = day.getDay();
+      // Primary assignee
+      if (task.assigneeId === userId) {
+        // If assigneeDays is set and non-empty, only count on those days
+        if (task.assigneeDays && task.assigneeDays.length > 0) {
+          return task.assigneeDays.includes(dow);
+        }
+        // If no split (no secondAssigneeId), always count
+        if (!task.secondAssigneeId) return true;
+        // If split but no assigneeDays specified, always count
+        return true;
+      }
+      // Second assignee
+      if (task.secondAssigneeId === userId) {
+        if (task.secondAssigneeDays && task.secondAssigneeDays.length > 0) {
+          return task.secondAssigneeDays.includes(dow);
+        }
+        return true;
+      }
+      return false;
+    }
+
     const result = users.map((user) => {
       let relevantTasks;
 
       if (period === "daily") {
         relevantTasks = tasks.filter(
-          (t) => t.assigneeId === user.id && taskAppliesToDay(t, targetDate)
+          (t) => taskAssignedToUserOnDay(t, user.id, targetDate) && taskAppliesToDay(t, targetDate)
         );
       } else if (period === "weekly") {
         // Get all days in the week
@@ -66,9 +90,8 @@ router.get("/comparison", async (req, res) => {
           const day = new Date(weekStart);
           day.setDate(weekStart.getDate() + i);
           tasks
-            .filter((t) => t.assigneeId === user.id && taskAppliesToDay(t, day))
+            .filter((t) => taskAssignedToUserOnDay(t, user.id, day) && taskAppliesToDay(t, day))
             .forEach((t) => {
-              // For recurring tasks, add weight per applicable day
               const key = `${t.id}_${day.toISOString().slice(0, 10)}`;
               taskSet.add(key + "|" + t.weight);
             });
@@ -82,6 +105,7 @@ router.get("/comparison", async (req, res) => {
           id: user.id,
           name: user.name,
           avatarColor: user.avatarColor,
+          avatar: user.avatar,
           totalWeight,
           taskCount: taskSet.size,
         };
@@ -95,7 +119,7 @@ router.get("/comparison", async (req, res) => {
           const day = new Date(monthStart);
           day.setDate(monthStart.getDate() + i);
           tasks
-            .filter((t) => t.assigneeId === user.id && taskAppliesToDay(t, day))
+            .filter((t) => taskAssignedToUserOnDay(t, user.id, day) && taskAppliesToDay(t, day))
             .forEach((t) => {
               const key = `${t.id}_${day.toISOString().slice(0, 10)}`;
               taskSet.add(key + "|" + t.weight);
@@ -110,6 +134,7 @@ router.get("/comparison", async (req, res) => {
           id: user.id,
           name: user.name,
           avatarColor: user.avatarColor,
+          avatar: user.avatar,
           totalWeight,
           taskCount: taskSet.size,
         };
@@ -123,6 +148,7 @@ router.get("/comparison", async (req, res) => {
         id: user.id,
         name: user.name,
         avatarColor: user.avatarColor,
+        avatar: user.avatar,
         totalWeight,
         taskCount: relevantTasks.length,
       };

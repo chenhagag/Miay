@@ -13,14 +13,26 @@ const filterTabs = [
   { key: 'UNSCHEDULED', label: 'לא מתוזמן' }
 ]
 
-const categories = ['הכל', 'ניקיון', 'בישול', 'כביסה', 'קניות', 'ילדים', 'תחזוקה', 'אחר']
+const categories = [
+  { value: 'all', label: 'הכל' },
+  { value: 'dishes', label: 'כלים' },
+  { value: 'laundry', label: 'כביסה' },
+  { value: 'cleaning', label: 'ניקיון' },
+  { value: 'cooking', label: 'בישול' },
+  { value: 'kids', label: 'ילדים' },
+  { value: 'errands', label: 'סידורים' },
+  { value: 'garden', label: 'גינה' },
+  { value: 'general', label: 'כללי' }
+]
+
+const categoryLabelMap = Object.fromEntries(categories.map((c) => [c.value, c.label]))
 
 export default function PartnerTasksPage() {
   const { partner } = useAuth()
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('all')
-  const [categoryFilter, setCategoryFilter] = useState('הכל')
+  const [categoryFilter, setCategoryFilter] = useState('all')
 
   useEffect(() => {
     if (!partner) return
@@ -40,7 +52,7 @@ export default function PartnerTasksPage() {
         result = result.filter((t) => t.type === activeTab)
       }
     }
-    if (categoryFilter !== 'הכל') {
+    if (categoryFilter !== 'all') {
       result = result.filter((t) => t.category === categoryFilter)
     }
     return result
@@ -49,7 +61,7 @@ export default function PartnerTasksPage() {
   const groupedTasks = useMemo(() => {
     const groups = {}
     filteredTasks.forEach((task) => {
-      const cat = task.category || 'אחר'
+      const cat = categoryLabelMap[task.category] || categoryLabelMap['general']
       if (!groups[cat]) groups[cat] = []
       groups[cat].push(task)
     })
@@ -67,11 +79,8 @@ export default function PartnerTasksPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-          style={{ backgroundColor: partner.avatarColor || '#ec4899' }}
-        >
-          {partner.name?.charAt(0) || '?'}
+        <div className="w-10 h-10 rounded-full flex items-center justify-center text-2xl bg-gray-100 shadow-sm">
+          {partner.avatar || '😊'}
         </div>
         <h1 className="text-2xl font-bold text-gray-800">המשימות של {partner.name}</h1>
       </div>
@@ -102,7 +111,7 @@ export default function PartnerTasksPage() {
           className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 outline-none"
         >
           {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c.value} value={c.value}>{c.label}</option>
           ))}
         </select>
         <span className="text-sm text-gray-400">{filteredTasks.length} משימות</span>
