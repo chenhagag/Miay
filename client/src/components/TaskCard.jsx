@@ -32,7 +32,7 @@ function isCompletedToday(task) {
   return !!task.isCompleted
 }
 
-export default function TaskCard({ task, onComplete, onEdit, readOnly = false }) {
+export default function TaskCard({ task, onComplete, onEdit, readOnly = false, hideComplete = false }) {
   const isOneTimeWithDate = task.type === 'ONE_TIME' && task.scheduledDate
   const catInfo = categoryMap[task.category] || categoryMap['general']
   const colorClass = catInfo.colors
@@ -59,18 +59,20 @@ export default function TaskCard({ task, onComplete, onEdit, readOnly = false })
       }`}
     >
       <div className="flex items-start gap-3">
-        {/* Completion checkbox - show for all views including readOnly */}
-        <button
-          onClick={handleComplete}
-          disabled={readOnly}
-          className={`mt-0.5 flex-shrink-0 transition-colors ${readOnly ? 'cursor-default' : ''}`}
-        >
-          {completed ? (
-            <CheckCircle2 size={22} className="text-green-500" />
-          ) : (
-            <Circle size={22} className={`text-gray-300 ${!readOnly ? 'hover:text-indigo-400' : ''}`} />
-          )}
-        </button>
+        {/* Completion checkbox */}
+        {!hideComplete && (
+          <button
+            onClick={handleComplete}
+            disabled={readOnly}
+            className={`mt-0.5 flex-shrink-0 transition-colors ${readOnly ? 'cursor-default' : ''}`}
+          >
+            {completed ? (
+              <CheckCircle2 size={22} className="text-green-500" />
+            ) : (
+              <Circle size={22} className={`text-gray-300 ${!readOnly ? 'hover:text-indigo-400' : ''}`} />
+            )}
+          </button>
+        )}
 
         {/* Content */}
         <div className="flex-1 min-w-0">

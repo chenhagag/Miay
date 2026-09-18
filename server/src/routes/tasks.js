@@ -135,7 +135,7 @@ router.get("/", async (req, res) => {
       }
     }
 
-    const tasks = await prisma.task.findMany({
+    let tasks = await prisma.task.findMany({
       where,
       include: {
         assignee: assigneeSelect,
@@ -145,6 +145,34 @@ router.get("/", async (req, res) => {
       },
       orderBy: [{ timeSpecific: "desc" }, { startTime: "asc" }, { createdAt: "asc" }],
     });
+
+    // Post-query filter: if viewing by day and filtering by a specific assignee,
+    // check assigneeDays/secondAssigneeDays to exclude tasks not meant for this day
+    if (view === "daily" && date && assignee && assignee !== "all" && assignee !== "unassigned") {
+      const targetDate = new Date(date);
+      const dow = targetDate.getDay();
+
+      tasks = tasks.filter((task) => {
+        // Check if this user is the primary assignee
+        if (task.assigneeId === assignee) {
+          // If assigneeDays is set (split assignment), only show on those days
+          if (task.assigneeDays && task.assigneeDays.length > 0) {
+            return task.assigneeDays.includes(dow);
+          }
+          return true;
+        }
+        // Check if this user is the secondary assignee
+        if (task.secondAssigneeId === assignee) {
+          if (task.secondAssigneeDays && task.secondAssigneeDays.length > 0) {
+            return task.secondAssigneeDays.includes(dow);
+          }
+          return true;
+        }
+        // Unassigned tasks pass through
+        if (!task.assigneeId) return true;
+        return true;
+      });
+    }
 
     res.json(tasks);
   } catch (err) {

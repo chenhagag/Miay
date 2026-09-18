@@ -18,8 +18,7 @@ export default function FairnessMeter({ user1, user2, user1Weight = 0, user2Weig
 
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-800">מד הוגנות</h3>
+      <div className="flex items-center justify-end mb-4">
         <span className={`text-sm font-semibold ${statusColor}`}>{statusText}</span>
       </div>
 

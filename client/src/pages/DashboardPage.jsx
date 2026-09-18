@@ -29,7 +29,7 @@ export default function DashboardPage() {
       const today = new Date().toISOString().split('T')[0]
       const [tasksData, compData, unassignedData] = await Promise.all([
         get(`/tasks?view=daily&date=${today}&assignee=${user.id}`),
-        get('/dashboard/comparison?period=daily').catch(() => null),
+        get(`/dashboard/comparison?period=daily&date=${today}`).catch(() => null),
         get('/tasks?assignee=unassigned').catch(() => [])
       ])
       const tasksList = Array.isArray(tasksData) ? tasksData : tasksData.tasks || []

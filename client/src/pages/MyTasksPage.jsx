@@ -308,14 +308,19 @@ export default function MyTasksPage() {
           <div key={category}>
             <h3 className="text-sm font-semibold text-gray-600 mb-3 pr-1">{category}</h3>
             <div className="space-y-2">
-              {catTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onComplete={handleComplete}
-                  onEdit={(t) => { setEditTask(t); setShowModal(true) }}
-                />
-              ))}
+              {catTasks.map((task) => {
+                // In manage view, only one-time tasks can be completed
+                const canComplete = viewMode === 'current' || task.type === 'ONE_TIME'
+                return (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onComplete={canComplete ? handleComplete : undefined}
+                    onEdit={(t) => { setEditTask(t); setShowModal(true) }}
+                    hideComplete={!canComplete}
+                  />
+                )
+              })}
             </div>
           </div>
         ))
