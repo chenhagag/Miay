@@ -16,7 +16,7 @@ const navItems = [
   { to: '/partner-tasks', label: 'partner', icon: Users, dynamic: true },
   { to: '/all-tasks', label: 'כל המשימות', icon: ListTodo },
   { to: '/unassigned', label: 'ללא שיוך', icon: HelpCircle },
-  { to: '/comparison', label: 'השוואה', icon: BarChart3 }
+  { to: '/comparison', label: 'שוויון בנטל', icon: BarChart3 }
 ]
 
 export default function Sidebar({ mobile = false }) {

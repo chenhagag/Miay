@@ -5,6 +5,7 @@ import TaskCard from '../components/TaskCard'
 import TaskModal from '../components/TaskModal'
 import FairnessMeter from '../components/FairnessMeter'
 import { Sun, AlertCircle, Plus, Loader2 } from 'lucide-react'
+import { post as apiPost } from '../api/client'
 
 export default function DashboardPage() {
   const { user, partner } = useAuth()
@@ -31,7 +32,19 @@ export default function DashboardPage() {
         get('/dashboard/comparison?period=daily').catch(() => null),
         get('/tasks?assignee=unassigned').catch(() => [])
       ])
-      setTasks(Array.isArray(tasksData) ? tasksData : tasksData.tasks || [])
+      const tasksList = Array.isArray(tasksData) ? tasksData : tasksData.tasks || []
+      const todayStr = new Date().toISOString().split('T')[0]
+      tasksList.sort((a, b) => {
+        const aDone = a.type === 'RECURRING'
+          ? (a.completions || []).some(c => c.completedDate?.startsWith(todayStr))
+          : !!a.isCompleted
+        const bDone = b.type === 'RECURRING'
+          ? (b.completions || []).some(c => c.completedDate?.startsWith(todayStr))
+          : !!b.isCompleted
+        if (aDone !== bDone) return aDone ? 1 : -1
+        return 0
+      })
+      setTasks(tasksList)
       setComparison(compData)
       setUnassignedCount(Array.isArray(unassignedData) ? unassignedData.length : unassignedData?.tasks?.length || 0)
     } catch (err) {
@@ -47,7 +60,12 @@ export default function DashboardPage() {
 
   const handleComplete = async (task) => {
     try {
-      await put(`/tasks/${task.id}`, { completed: !task.completed })
+      const today = new Date().toISOString().split('T')[0]
+      const isCompletedToday = task.type === 'RECURRING'
+        ? (task.completions || []).some(c => c.completedDate?.startsWith(today))
+        : !!task.isCompleted
+      const endpoint = isCompletedToday ? 'uncomplete' : 'complete'
+      await apiPost(`/tasks/${task.id}/${endpoint}`)
       fetchData()
     } catch (err) {
       console.error('Complete error:', err)
@@ -55,7 +73,6 @@ export default function DashboardPage() {
   }
 
   const handleSave = async (payload, id) => {
-    const { post: apiPost } = await import('../api/client')
     if (id) {
       await put(`/tasks/${id}`, payload)
     } else {
@@ -100,12 +117,12 @@ export default function DashboardPage() {
       )}
 
       {/* Fairness meter */}
-      {comparison && (
+      {comparison?.users && (
         <FairnessMeter
-          user1={user}
-          user2={partner}
-          user1Weight={comparison.user1Weight ?? comparison.userWeight ?? 0}
-          user2Weight={comparison.user2Weight ?? comparison.partnerWeight ?? 0}
+          user1={comparison.users.find(u => u.id === user?.id) || user}
+          user2={comparison.users.find(u => u.id === partner?.id) || partner}
+          user1Weight={comparison.users.find(u => u.id === user?.id)?.totalWeight || 0}
+          user2Weight={comparison.users.find(u => u.id === partner?.id)?.totalWeight || 0}
         />
       )}
 

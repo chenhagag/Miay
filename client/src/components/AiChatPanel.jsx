@@ -17,7 +17,7 @@ export default function AiChatPanel() {
     setResult(null)
     setConfirmed(false)
     try {
-      const data = await post('/ai/parse-task', { text: input })
+      const data = await post('/ai/parse-task', { message: input })
       setResult(data)
     } catch (err) {
       setError(err.message || 'שגיאה בעיבוד הבקשה')
@@ -26,22 +26,14 @@ export default function AiChatPanel() {
     }
   }
 
-  const handleConfirm = async () => {
-    if (!result) return
-    setLoading(true)
-    try {
-      await post('/tasks', result.task || result)
-      setConfirmed(true)
-      setInput('')
-      setTimeout(() => {
-        setResult(null)
-        setConfirmed(false)
-      }, 2000)
-    } catch (err) {
-      setError(err.message || 'שגיאה ביצירת המשימה')
-    } finally {
-      setLoading(false)
-    }
+  const handleConfirm = () => {
+    // Task was already created by the AI endpoint on the server
+    setConfirmed(true)
+    setInput('')
+    setTimeout(() => {
+      setResult(null)
+      setConfirmed(false)
+    }, 2000)
   }
 
   const handleCancel = () => {

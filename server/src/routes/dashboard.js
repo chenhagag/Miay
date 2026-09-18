@@ -14,20 +14,15 @@ router.get("/comparison", async (req, res) => {
     const householdId = req.user.householdId;
     const targetDate = date ? new Date(date) : new Date();
 
-    // Get all users in household
     const users = await prisma.user.findMany({
       where: { householdId },
       select: { id: true, name: true, avatarColor: true, avatar: true },
     });
 
-    // Get all tasks in household
     const tasks = await prisma.task.findMany({
       where: { householdId },
     });
 
-    const dayOfWeek = targetDate.getDay();
-
-    // Determine which tasks apply to the period
     function taskAppliesToDay(task, day) {
       const dow = day.getDay();
       if (task.type === "RECURRING") {
@@ -48,21 +43,15 @@ router.get("/comparison", async (req, res) => {
       return false;
     }
 
-    // Check if a task is assigned to a user on a given day (considering split assignment)
     function taskAssignedToUserOnDay(task, userId, day) {
       const dow = day.getDay();
-      // Primary assignee
       if (task.assigneeId === userId) {
-        // If assigneeDays is set and non-empty, only count on those days
         if (task.assigneeDays && task.assigneeDays.length > 0) {
           return task.assigneeDays.includes(dow);
         }
-        // If no split (no secondAssigneeId), always count
         if (!task.secondAssigneeId) return true;
-        // If split but no assigneeDays specified, always count
         return true;
       }
-      // Second assignee
       if (task.secondAssigneeId === userId) {
         if (task.secondAssigneeDays && task.secondAssigneeDays.length > 0) {
           return task.secondAssigneeDays.includes(dow);
@@ -72,34 +61,38 @@ router.get("/comparison", async (req, res) => {
       return false;
     }
 
-    const result = users.map((user) => {
-      let relevantTasks;
+    // Calculate for a range of days
+    function calculateForDays(days) {
+      return users.map((user) => {
+        let totalWeight = 0;
+        let totalOccurrences = 0;
+        const taskDetails = [];
 
-      if (period === "daily") {
-        relevantTasks = tasks.filter(
-          (t) => taskAssignedToUserOnDay(t, user.id, targetDate) && taskAppliesToDay(t, targetDate)
-        );
-      } else if (period === "weekly") {
-        // Get all days in the week
-        const weekStart = new Date(targetDate);
-        weekStart.setDate(targetDate.getDate() - dayOfWeek);
-        weekStart.setHours(0, 0, 0, 0);
-
-        const taskSet = new Set();
-        for (let i = 0; i < 7; i++) {
-          const day = new Date(weekStart);
-          day.setDate(weekStart.getDate() + i);
+        for (const day of days) {
           tasks
             .filter((t) => taskAssignedToUserOnDay(t, user.id, day) && taskAppliesToDay(t, day))
             .forEach((t) => {
-              const key = `${t.id}_${day.toISOString().slice(0, 10)}`;
-              taskSet.add(key + "|" + t.weight);
+              totalWeight += t.weight;
+              totalOccurrences++;
+              // Track unique tasks with their occurrence count
+              const existing = taskDetails.find((d) => d.id === t.id);
+              if (existing) {
+                existing.occurrences++;
+                existing.totalWeight += t.weight;
+              } else {
+                taskDetails.push({
+                  id: t.id,
+                  title: t.title,
+                  weight: t.weight,
+                  category: t.category,
+                  type: t.type,
+                  recurrence: t.recurrence,
+                  occurrences: 1,
+                  totalWeight: t.weight,
+                });
+              }
             });
         }
-        const totalWeight = [...taskSet].reduce((sum, entry) => {
-          const w = parseInt(entry.split("|")[1], 10);
-          return sum + w;
-        }, 0);
 
         return {
           id: user.id,
@@ -107,52 +100,40 @@ router.get("/comparison", async (req, res) => {
           avatarColor: user.avatarColor,
           avatar: user.avatar,
           totalWeight,
-          taskCount: taskSet.size,
+          taskCount: totalOccurrences,
+          uniqueTaskCount: taskDetails.length,
+          tasks: taskDetails,
         };
-      } else if (period === "monthly") {
-        const monthStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-        const monthEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
-        const daysInMonth = monthEnd.getDate();
+      });
+    }
 
-        const taskSet = new Set();
-        for (let i = 0; i < daysInMonth; i++) {
-          const day = new Date(monthStart);
-          day.setDate(monthStart.getDate() + i);
-          tasks
-            .filter((t) => taskAssignedToUserOnDay(t, user.id, day) && taskAppliesToDay(t, day))
-            .forEach((t) => {
-              const key = `${t.id}_${day.toISOString().slice(0, 10)}`;
-              taskSet.add(key + "|" + t.weight);
-            });
-        }
-        const totalWeight = [...taskSet].reduce((sum, entry) => {
-          const w = parseInt(entry.split("|")[1], 10);
-          return sum + w;
-        }, 0);
+    let result;
 
-        return {
-          id: user.id,
-          name: user.name,
-          avatarColor: user.avatarColor,
-          avatar: user.avatar,
-          totalWeight,
-          taskCount: taskSet.size,
-        };
+    if (period === "daily") {
+      result = calculateForDays([targetDate]);
+    } else if (period === "weekly") {
+      const dayOfWeek = targetDate.getDay();
+      const weekStart = new Date(targetDate);
+      weekStart.setDate(targetDate.getDate() - dayOfWeek);
+      weekStart.setHours(0, 0, 0, 0);
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(weekStart);
+        day.setDate(weekStart.getDate() + i);
+        days.push(day);
       }
-
-      // Daily case falls through here
-      if (!relevantTasks) relevantTasks = [];
-      const totalWeight = relevantTasks.reduce((sum, t) => sum + t.weight, 0);
-
-      return {
-        id: user.id,
-        name: user.name,
-        avatarColor: user.avatarColor,
-        avatar: user.avatar,
-        totalWeight,
-        taskCount: relevantTasks.length,
-      };
-    });
+      result = calculateForDays(days);
+    } else if (period === "monthly") {
+      const monthStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+      const monthEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
+      const days = [];
+      for (let i = 0; i < monthEnd.getDate(); i++) {
+        const day = new Date(monthStart);
+        day.setDate(monthStart.getDate() + i);
+        days.push(day);
+      }
+      result = calculateForDays(days);
+    }
 
     res.json({
       users: result,

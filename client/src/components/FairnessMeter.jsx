@@ -27,11 +27,8 @@ export default function FairnessMeter({ user1, user2, user1Weight = 0, user2Weig
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-              style={{ backgroundColor: user1?.avatarColor || '#6366f1' }}
-            >
-              {user1?.name?.charAt(0) || '?'}
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-sm bg-gray-100">
+              {user1?.avatar || '😊'}
             </div>
             <span className="text-sm text-gray-700">{user1?.name || 'משתמש 1'}</span>
           </div>
@@ -52,11 +49,8 @@ export default function FairnessMeter({ user1, user2, user1Weight = 0, user2Weig
       <div>
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-              style={{ backgroundColor: user2?.avatarColor || '#ec4899' }}
-            >
-              {user2?.name?.charAt(0) || '?'}
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-sm bg-gray-100">
+              {user2?.avatar || '😊'}
             </div>
             <span className="text-sm text-gray-700">{user2?.name || 'משתמש 2'}</span>
           </div>

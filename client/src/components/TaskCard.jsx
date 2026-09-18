@@ -23,10 +23,20 @@ const recurrenceLabels = {
   MONTHLY: 'חודשי'
 }
 
+function isCompletedToday(task) {
+  if (task.type === 'RECURRING') {
+    if (!task.completions || task.completions.length === 0) return false
+    const today = new Date().toISOString().split('T')[0]
+    return task.completions.some(c => c.completedDate?.startsWith(today))
+  }
+  return !!task.isCompleted
+}
+
 export default function TaskCard({ task, onComplete, onEdit, readOnly = false }) {
   const isOneTimeWithDate = task.type === 'ONE_TIME' && task.scheduledDate
   const catInfo = categoryMap[task.category] || categoryMap['general']
   const colorClass = catInfo.colors
+  const completed = isCompletedToday(task)
 
   const handleComplete = (e) => {
     e.stopPropagation()
@@ -45,30 +55,29 @@ export default function TaskCard({ task, onComplete, onEdit, readOnly = false })
       } ${
         isOneTimeWithDate ? 'border-r-4 border-orange-400' : 'border border-gray-100'
       } ${
-        task.completed ? 'opacity-60' : ''
+        completed ? 'opacity-60' : ''
       }`}
     >
       <div className="flex items-start gap-3">
-        {/* Completion checkbox */}
-        {!readOnly && (
-          <button
-            onClick={handleComplete}
-            className="mt-0.5 flex-shrink-0 transition-colors"
-          >
-            {task.completed ? (
-              <CheckCircle2 size={22} className="text-green-500" />
-            ) : (
-              <Circle size={22} className="text-gray-300 hover:text-indigo-400" />
-            )}
-          </button>
-        )}
+        {/* Completion checkbox - show for all views including readOnly */}
+        <button
+          onClick={handleComplete}
+          disabled={readOnly}
+          className={`mt-0.5 flex-shrink-0 transition-colors ${readOnly ? 'cursor-default' : ''}`}
+        >
+          {completed ? (
+            <CheckCircle2 size={22} className="text-green-500" />
+          ) : (
+            <Circle size={22} className={`text-gray-300 ${!readOnly ? 'hover:text-indigo-400' : ''}`} />
+          )}
+        </button>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <h3
               className={`font-medium text-gray-800 ${
-                task.completed ? 'line-through text-gray-400' : ''
+                completed ? 'line-through text-gray-400' : ''
               }`}
             >
               {task.title}
@@ -132,7 +141,7 @@ export default function TaskCard({ task, onComplete, onEdit, readOnly = false })
               className="w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm bg-gray-100"
               title={task.assignee.name}
             >
-              {task.assignee.avatar || task.assignee.name?.charAt(0) || '?'}
+              {task.assignee.avatar || '😊'}
             </div>
           )}
           {task.secondAssignee && (
@@ -140,7 +149,7 @@ export default function TaskCard({ task, onComplete, onEdit, readOnly = false })
               className="w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm bg-gray-100 -mr-2"
               title={task.secondAssignee.name}
             >
-              {task.secondAssignee.avatar || task.secondAssignee.name?.charAt(0) || '?'}
+              {task.secondAssignee.avatar || '😊'}
             </div>
           )}
         </div>

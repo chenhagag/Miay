@@ -96,7 +96,12 @@ export default function AllTasksPage() {
 
   const handleComplete = async (task) => {
     try {
-      await put(`/tasks/${task.id}`, { completed: !task.completed })
+      const today = new Date().toISOString().split('T')[0]
+      const isCompletedToday = task.type === 'RECURRING'
+        ? (task.completions || []).some(c => c.completedDate?.startsWith(today))
+        : !!task.isCompleted
+      const endpoint = isCompletedToday ? 'uncomplete' : 'complete'
+      await post(`/tasks/${task.id}/${endpoint}`)
       fetchTasks()
     } catch (err) {
       console.error('Complete error:', err)

@@ -33,12 +33,14 @@ export default function ComparisonPage() {
     fetchComparison()
   }, [period, date])
 
-  const user1Weight = data?.user1Weight ?? data?.userWeight ?? 0
-  const user2Weight = data?.user2Weight ?? data?.partnerWeight ?? 0
-  const user1Tasks = data?.user1Tasks ?? data?.userTasks ?? []
-  const user2Tasks = data?.user2Tasks ?? data?.partnerTasks ?? []
-  const user1Count = data?.user1Count ?? user1Tasks.length ?? 0
-  const user2Count = data?.user2Count ?? user2Tasks.length ?? 0
+  const userData = data?.users?.find(u => u.id === user?.id)
+  const partnerData = data?.users?.find(u => u.id === partner?.id)
+  const user1Weight = userData?.totalWeight ?? 0
+  const user2Weight = partnerData?.totalWeight ?? 0
+  const user1Tasks = userData?.tasks ?? []
+  const user2Tasks = partnerData?.tasks ?? []
+  const user1Count = userData?.taskCount ?? 0
+  const user2Count = partnerData?.taskCount ?? 0
 
   const total = user1Weight + user2Weight
   const pct1 = total > 0 ? Math.round((user1Weight / total) * 100) : 50
@@ -67,7 +69,7 @@ export default function ComparisonPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
         <BarChart3 size={26} className="text-indigo-500" />
-        השוואת חלוקה
+        שוויון בנטל
       </h1>
 
       {/* Controls */}
@@ -138,11 +140,8 @@ export default function ComparisonPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                      style={{ backgroundColor: user1Color }}
-                    >
-                      {user?.name?.charAt(0) || '?'}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg bg-gray-100">
+                      {user?.avatar || '😊'}
                     </div>
                     <span className="font-medium text-gray-700">{user?.name || 'משתמש 1'}</span>
                   </div>
@@ -163,11 +162,8 @@ export default function ComparisonPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                      style={{ backgroundColor: user2Color }}
-                    >
-                      {partner?.name?.charAt(0) || '?'}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg bg-gray-100">
+                      {partner?.avatar || '😊'}
                     </div>
                     <span className="font-medium text-gray-700">{partner?.name || 'משתמש 2'}</span>
                   </div>
@@ -191,11 +187,8 @@ export default function ComparisonPage() {
             {/* User 1 tasks */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-4">
-                <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                  style={{ backgroundColor: user1Color }}
-                >
-                  {user?.name?.charAt(0) || '?'}
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-base bg-gray-100">
+                  {user?.avatar || '😊'}
                 </div>
                 <h3 className="font-semibold text-gray-800">{user?.name || 'משתמש 1'}</h3>
                 <span className="text-xs text-gray-400">({user1Tasks.length})</span>
@@ -206,17 +199,13 @@ export default function ComparisonPage() {
                 <div className="space-y-2">
                   {user1Tasks.map((task, i) => (
                     <div key={task.id || i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                      <span className="text-sm text-gray-700">{task.title}</span>
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, j) => (
-                          <div
-                            key={j}
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              j < (task.weight || 1) ? 'bg-indigo-500' : 'bg-gray-200'
-                            }`}
-                          />
-                        ))}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-gray-700">{task.title}</span>
+                        {task.occurrences > 1 && (
+                          <span className="text-xs text-gray-400 mr-1">×{task.occurrences}</span>
+                        )}
                       </div>
+                      <span className="text-xs font-medium text-indigo-600 mr-2">{task.totalWeight || task.weight}</span>
                     </div>
                   ))}
                 </div>
@@ -226,11 +215,8 @@ export default function ComparisonPage() {
             {/* User 2 tasks */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-4">
-                <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                  style={{ backgroundColor: user2Color }}
-                >
-                  {partner?.name?.charAt(0) || '?'}
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-base bg-gray-100">
+                  {partner?.avatar || '😊'}
                 </div>
                 <h3 className="font-semibold text-gray-800">{partner?.name || 'משתמש 2'}</h3>
                 <span className="text-xs text-gray-400">({user2Tasks.length})</span>
@@ -241,17 +227,13 @@ export default function ComparisonPage() {
                 <div className="space-y-2">
                   {user2Tasks.map((task, i) => (
                     <div key={task.id || i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                      <span className="text-sm text-gray-700">{task.title}</span>
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, j) => (
-                          <div
-                            key={j}
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              j < (task.weight || 1) ? 'bg-pink-500' : 'bg-gray-200'
-                            }`}
-                          />
-                        ))}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-gray-700">{task.title}</span>
+                        {task.occurrences > 1 && (
+                          <span className="text-xs text-gray-400 mr-1">×{task.occurrences}</span>
+                        )}
                       </div>
+                      <span className="text-xs font-medium text-pink-600 mr-2">{task.totalWeight || task.weight}</span>
                     </div>
                   ))}
                 </div>

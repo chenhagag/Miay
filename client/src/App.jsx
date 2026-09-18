@@ -16,7 +16,7 @@ import { Loader2 } from 'lucide-react'
 
 function AppContent() {
   const { user, loading } = useAuth()
-  const [showSetup, setShowSetup] = useState(true)
+  const [showSetup, setShowSetup] = useState(false)
 
   if (loading) {
     return (
@@ -35,6 +35,7 @@ function AppContent() {
     }
     return <LoginPage onSwitch={() => setShowSetup(true)} />
   }
+
 
   return (
     <div className="flex min-h-screen">
